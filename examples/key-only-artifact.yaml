@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: key-only-artifacts-
+spec:
+  entrypoint: main
+  templates:
+    - name: main
+      dag:
+        tasks:
+          - name: generate
+            template: generate
+          - name: consume
+            template: consume
+            dependencies:
+              - generate
+    - name: generate
+      container:
+        image: registry-vpc.cn-beijing.aliyuncs.com/galixir/whalesay:latest
+        command: ["sh", "-c"]
+        args: [ 'echo  hello > /mnt/file' ]
+        volumeMounts:
+          - name: out
+            mountPath: /mnt
+      volumes:
+        - name: out
+          emptyDir: { }
+
+      outputs:
+        artifacts:
+          - name: file
+            path: /mnt/file
+            s3:
+              key: my-file
+        
+    - name: consume
+      container:
+        image: registry-vpc.cn-beijing.aliyuncs.com/galixir/whalesay:latest
+        args: [cat /tmp/file]
+      inputs:
+        artifacts:
+          - name: file
+            path: /tmp/file
+            s3:
+              key: my-file

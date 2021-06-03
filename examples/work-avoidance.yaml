@@ -1,0 +1,78 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: work-avoidance-
+spec:
+  entrypoint: start
+
+  templates:
+    - name: start
+      steps:
+        - - name: start
+            template: touch-marker-location
+        - - name: echo
+            template: echo
+            arguments:
+              parameters:
+                - name: num
+                  value: "{{item}}"
+            withSequence:
+              count: "3"
+
+    - name: touch-marker-location
+      container:
+        image: registry-vpc.cn-beijing.aliyuncs.com/galixir/net-tools:latest
+        command: [sh, -c]
+        args: ["mkdir -p /work/markers"]
+        # args: ["if [ -e /mnt/outfile ]; then echo exist; else touch /mnt/outfile; fi"]
+        volumeMounts:
+          - name: out
+            mountPath: /work
+      volumes:
+        - name: out
+          emptyDir: { }
+      outputs:
+        artifacts:
+          - name: markers
+            path: /work/markers
+            oss:
+              key: argo-test/work-avoidance-markers
+
+    - name: echo
+      inputs:
+        parameters:
+          - name: num
+        artifacts:
+          - name: markers
+            path: /work/markers
+            optional: true
+            oss:
+              key: argo-test/work-avoidance-markers
+      script:
+        image: registry-vpc.cn-beijing.aliyuncs.com/galixir/whalesay:latest
+        command:
+          - bash
+          - -eux
+        source: |
+          marker=/work/markers/$(date +%Y-%m-%d)-echo-{{inputs.parameters.num}}
+          if [ -e  ${marker} ]; then
+            echo "work already done"
+            exit 0
+          fi
+          echo "working very hard"
+          echo "exist" > ${marker}
+          cat ${marker}
+        volumeMounts:
+          - name: work
+            mountPath: /work
+      volumes:
+      - name: work
+        emptyDir: { }
+      outputs:
+        artifacts:
+          - name: markers
+            path: /work/markers
+            oss:
+              key: argo-test/work-avoidance-markers
+
+              

@@ -1,0 +1,53 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: previous-step-outputs-as-inputs-
+spec:
+  entrypoint: outputs
+  templates:
+  - name: outputs
+    steps:
+    - - name: generate-output
+        template: whalesay
+    - - name: consume-output
+        template: print-message
+        arguments:
+          parameters:
+          - name: message
+            value: "{{steps.generate-output.outputs.parameters.hello-param}}"
+          artifacts:
+          - name: input-artifact-1
+            from: "{{steps.generate-output.outputs.artifacts.output-artifact-1}}"
+
+  - name: whalesay
+    container:
+      image: registry-vpc.cn-beijing.aliyuncs.com/galixir/whalesay:latest
+      command: [sh, -c]
+      args: ["sleep 1; echo -n hello world > /tmp/hello_world.txt; mkdir -p /tmp/some-directory; echo some data > /tmp/some-directory/data"]
+      volumeMounts:
+          - name: out
+            mountPath: /tmp
+    volumes:
+      - name: out
+        emptyDir: { }
+    outputs:
+      parameters:
+      - name: hello-param
+        valueFrom:
+          default: "Foobar"   # Default value to use if retrieving valueFrom fails. If not provided workflow will fail instead
+          path: /tmp/hello_world.txt
+      artifacts:
+      - name: output-artifact-1
+        path: /tmp/some-directory
+
+  - name: print-message
+    inputs:
+      parameters:
+      - name: message
+      artifacts:
+      - name: input-artifact-1
+        path: /tmp/input-directory
+    container:
+      image: registry-vpc.cn-beijing.aliyuncs.com/galixir/whalesay:latest
+      command: ["sh", "-c"]
+      args: ["cowsay {{inputs.parameters.message}}; ls -al /tmp/input-directory; cat  /tmp/input-directory/data"]

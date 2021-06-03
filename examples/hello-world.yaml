@@ -1,0 +1,14 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: hello-world-
+  labels:
+    test: "true"
+spec:
+  entrypoint: whalesay
+  templates:
+  - name: whalesay
+    container:
+      image: registry-vpc.cn-beijing.aliyuncs.com/galixir/whalesay:latest
+      command: [cowsay]
+      args: ["hello world"]

@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    # if you want to use this config map by default - name it "artifact-repositories" 
+  name: artifact-repositories
+  annotations:
+    # v3.0 and after - if you want to use a specific key, put that's key into this annotation 
+    workflows.argoproj.io/default-artifact-repository: oss-v1
+data:
+  oss-v1: |
+    oss:
+      endpoint: oss-cn-beijing-internal.aliyuncs.com
+      bucket: pyxir-drug-discovery-platform
+      key: test-argo-1/ # this is path in the bucket
+      # accessKeySecret and secretKeySecret are secret selectors.
+      # It references the k8s secret named 'my-oss-credentials'.
+      # This secret is expected to have have the keys 'accessKey'
+      # and 'secretKey', containing the base64 encoded credentials
+      # to the bucket.
+      accessKeySecret:
+        name: argo-oss-credentials
+        key: accessKey
+      secretKeySecret:
+        name: argo-oss-credentials
+        key: secretKey
+    

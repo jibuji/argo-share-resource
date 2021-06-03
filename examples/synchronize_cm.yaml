@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sync-limit-3
+data:
+  template: "1"
+  template1: "1"
+  template2: "1"
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sync-limit-3-1
+data:
+  template: "3"
+
+--- 
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sync-limit-3-2
+data:
+  template: "3"

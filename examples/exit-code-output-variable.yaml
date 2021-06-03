@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: exit-code-output-variable-
+spec:
+  securityContext:
+    runAsNonRoot: false
+  entrypoint: exit-code-output-variable
+  templates:
+    - name: exit-code-output-variable
+      steps:
+        - - name: failing-container
+            template: failing-container
+            continueOn:
+              failed: true
+        - - name: echo-container
+            template: echo-container
+            arguments:
+              parameters:
+                - name: exitCode
+                  value: "{{steps.failing-container.exitCode}}"
+
+    - name: failing-container
+      container:
+        image: registry-vpc.cn-beijing.aliyuncs.com/galixir/whalesay:latest
+        command: [sh, -c]
+        args: ["exit 123"]
+
+    - name: echo-container
+      inputs:
+        parameters:
+        - name: exitCode
+      container:
+        image: registry-vpc.cn-beijing.aliyuncs.com/galixir/whalesay:latest
+        command: [sh, -c]
+        args: ["echo \"Exit code was: {{inputs.parameters.exitCode}}\""]
